@@ -1,0 +1,45 @@
+---
+title: "Chapter 4 Meetup Presentation"
+author: "Nabila Hossain"
+date: "March 2, 2016"
+output: html_document
+---
+
+***
+
+####4.3 College credits. A college counselor is interested in estimating how many credits a student typically enrolls in each semester. The counselor decides to randomly sample 100 students by using the registrar's database of students. The histogram below shows the distribution of the number of credits taken by these students. Sample statistics for this distribution are also provided.
+
+![image](https://raw.githubusercontent.com/nabilahossain/Class-DATA606/master/Presentation/Question%204.3%20OS3ed.png)  
+
+(a) __What is the point estimate for the average number of credits taken per semester by students at this college? What about the median?__
+
+__Answer:__ By looking at the sample statistics above, we see that the point estimate for the average number of credits taken per semester by students at this college is 13.65 credits. The median number of credits taken per semester by students at this college is 14 credits.
+
+(b) __What is the point estimate for the standard deviation of the number of credits taken per semester by students at this college? What about the IQR?__
+
+__Answer:__ By looking at the sample statistics, above, we see that the point estimate for the standard deviation of the number of credits taken per semester by students at this college is 1.91. The IQR is 2.
+
+$$Q_3-Q_1=15-13=2$$
+
+
+(c) __Is a load of 16 credits unusually high for this college? What about 18 credits? Explain your reasoning. Hint: Observations farther than two standard deviations from the mean are usually considered to be unusual.__
+
+$$Z=\frac{observation-mean}{SD}$$
+$$Z_{16}=\frac{16-13.65}{1.91}=`r (16-13.65)/1.91`$$
+$$Z_{18}=\frac{18-13.65}{1.91}=`r (18-13.65)/1.91`$$
+
+__Answer:__ A load of 16 credits is not usually high for this college, since it is within 2 standard deviation of the mean, $Z_{16}=1.23$. A load of 18 credits is usually high for this college, since it is above the 2 standard deviation of the mean $Z_{18}=2.277$.
+
+(d) __The college counselor takes another random sample of 100 students and this time finds a sample mean of 14.02 units. Should she be surprised that this sample statistic is slightly different than the one from the original sample? Explain your reasoning.__ 
+
+__Answer:__ No, the college counselor should not be surprised while sampling another 100 students and finding their mean to be 14.02. It is normal to find different mean for different samples, since point estimates only approximates the given population not the population as a whole (or the total population), and they tend to vary from one sample to another.
+
+(e) __The sample means given above are point estimates for the mean number of credits taken by all students at that college. What measures do we use to quantify the variability of this estimate (Hint: recall that $SD_\bar{x}=\frac{\sigma }{\sqrt{n}}$)? Compute this quantity using the data from the original sample.__
+
+__Answer:__ For this sample mean, which is a point estimates for the mean number of credits taken by all students at that college, we can use the standard error. The standard error for this sample mean is `r 1.91/sqrt(100)`.
+
+$$SE=\frac{s}{\sqrt{n}}=\frac{1.91}{\sqrt{100}}=`r 1.91/sqrt(100)`$$
+
+
+
+
