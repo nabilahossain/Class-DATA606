@@ -1,0 +1,410 @@
+---
+title: "DATA606 - Project"
+author: "Nabila Hossain"
+date: "May 22, 2016"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+
+    
+```{r include=FALSE, cache=FALSE}
+# DO NOT REMOVE
+# THIS IS FOR SETTING SOME PLOTTING PARAMETERS SO THAT YOUR PLOTS DON'T TAKE UP TOO MUCH SPACE
+# IF YOU WOULD LIKE TO CHANGE THESE, SEE HELP FILES ON THE par() FUNCTION
+# OR ASK FOR HELP
+library(knitr)
+## set global chunk options
+opts_chunk$set(fig.path='figure/manual-', cache.path='cache/manual-', fig.align='center', fig.show='hold', par=TRUE)
+## tune details of base graphics (http://yihui.name/knitr/hooks)
+knit_hooks$set(par=function(before, options, envir){
+if (before && options$fig.show!='none') par(mar=c(4,4,.2,.1),cex.lab=.95,cex.axis=.9,mgp=c(2,.7,0),tcl=-.3)
+})
+```
+
+```{r packages, echo=FALSE, results='hide', warning=FALSE, message=FALSE}
+library(psych)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+library(RColorBrewer) 
+load(url("http://bit.ly/dasi_gss_ws_cl"))
+source("http://bit.ly/dasi_inference")
+```
+
+
+### Introduction:
+
+
+There are various saying/implication all across the world that if you have high education then you will earn more money. Is this saying true for everyone all over the world? Will it be true for people living in New York, one of the 50 States in U.S. where about 19 million people lives, and the State that holds New York City[$^2$](#b) where over 8 million people leave, and place where very diverse people lives. Therefore for this project I ask the question: __Does education have a role in a persons' earning, in New York? Does it change if you are a female or if you are not a U.S. Citizen?__  
+
+As a female New Yorker, who was not a U.S. citizen by birth I want to know the answer to those two question. I believe there are many people in New York who wants to know the answer, especially people who are currently in school/college/Universities. Almost everyone thinks about a well-established live with a good earning/income source, and a comfortable living. However to achieve those goals many people have tried to obtain an education. Education is expensive, for most people in the world, so is it worth the money to get a higher educational attainment? Do only education have a role in our earning or does something like our gender or citizenship status have an effect in it? In this project I will study less than 1% of New Yorkers to see if educational attainment have an effect on total personal earnings.  
+
+
+### Data:    
+
+I obtained the data from: DATA.GOV ("The home of the U.S. Government's open data") [$^1$](#1), it can also be obtained from United States Census Bureau [$^5$](#e). I obtained the details about the data and codes for variables "2009 Data Dictionary" and the accuracy of the data from "2009 PUMS Accuracy"[$^6$](#f).
+
+The data was obtained by the American Community Survey (ACS). The data is personal information from people leaving in New York State in 2009. This is an observational study, where New Yorkers were survived (voluntary) about themselves and their life. Here is a description of the data taken from the PDF that comes with the data [$^4$](#d): 
+
+> "The Public Use Microdata Sample (PUMS) contains a sample of actual responses to the American Community Survey (ACS). The PUMS dataset include variables for nearly every question on the survey... Each record in the file represents a single person... In the person-level file, individuals are organized into households, making possible the study people within the contexts of their families and other household members. The PUMS contain data on approximately one percent of the United States population."
+
+The original data contain 188,767 cases with 279 variables. Each case in this data set is responses from one person, living in New York in 2009.[$^5$](#e) Since it is too big to work with, I created a subset with all the cases, and only 6 variables. I put the final data set that I will be working with in this project in GitHub. The variables that I choose for this project are:  "Citizenship Status", "Educational Attainment", "SEX", and "Total Personal Earnings". I also included two extra variables "Age" and "Total Personal Income" because I will be discussing them in my conclusion. I put a .zip file with the original data and data dictionary in GitHub, for anyone who wants to explore or study the original data.
+
+
+variable           | description         | type       | data dictionary
+------------------ | ------------------- | ---------- | --------------------
+`Age`              | age of the respondent | numerical, discrete / data as numerical |0 - under 1 year; 1-99 - ages 1 to 99
+`Citizen_Stat`     | citizenship status of the respondent | categorical, variable | 1 - born in U.S.; 2 - born in Puerto Rico and surrounding area; 3- born abroad of American parent(s); 4 - U.S. citizen by naturalization; 5 - Not U.S. citizen.
+`Edu_Attainment`   | educational attainment of the respondent |  categorical, ordinal / data as numerical | N/A - Less than 3 years; 1 - no school; 2-14 - pre-K to 11th grade; 15 - 12th grade no diploma; 16 - regular HS diploma; 17 - GED or equivalent; 18-19 some college; 20 - associate's degree; 21 - bachelor's degree; 22-24 beyond a bachelor's degree.
+`SEX`              | gender of the respondent | categorical, variable / data as numerical| 1 - male; 2 - female
+`Total_Per_Earn`   | total person's earnings of the respondent | numerical, discrete | N/A - less than 15 years old; 0 - no earnings; -9999 - loss of $9999 or more; -1 to -9998 - loss $1 to $9998; 1-9999999 - earn of $1 to $9999999 (all whole numbers)
+`Total_Per_Income` | total person's income of the respondent | numerical, discrete |   N/A - less than 15 years old; 0 - no earnings; -9999 - loss of $9999 or more; -1 to -9998 - loss $1 to $9998; 1-9999999 - income of $1 to $9999999 (all whole numbers) 
+
+
+
+Here is a look at summary of the data distribution:    
+
+```{r data, echo=FALSE, warning=FALSE, message=FALSE}
+#Reading the subset of data with only 6 columns of the original data.
+PUMS_NY <- read.csv(file="https://raw.githubusercontent.com/nabilahossain/Class-DATA606/master/Project/2009PUMS_PERSON_DATA_NY.csv", header=TRUE, sep=",") %>% select(-X)
+
+names(PUMS_NY) <- c("Age", "Citizen_Stat", "Edu_Attainment", "SEX", "Total_Per_Earn", "Total_Per_Income")
+
+kable(summary(PUMS_NY), align = "c", caption = "Table 1: Summary of the data and its distribution")
+
+```
+
+
+I created a sub set of data, with the four variables that I will be looking at during this project, `Total_Per_Earn`, `Edu_Attainment`, `SEX`, and `Citizen_Stat`. I only included the cases where `Total_Per_Earn`$>=500$. I excluded the negative and less than 500 earnings because I do not know the details of how the respondent and their family members could have a loss in earnings or have little to no earnings. There could be many factors that could have resulted in those earnings (like: unemployment, child support...), therefore I will only look at the cases where there is a positive earnings of $>=500$. Here is a summary statistic of the data, when I only include positive earnings.
+
+
+```{r sub-sets, echo=FALSE, warning=FALSE, message=FALSE}
+#Subset with only the data I will work with in this project, "Citizen_Stat", "Edu_Attainment", "SEX", "Total_Per_Earn" >= 500.
+Sub_Per_Earn <- subset(PUMS_NY, Total_Per_Earn != "NA" & Edu_Attainment != "NA" & Total_Per_Earn > 499  & Edu_Attainment > 0) %>% select(-c(Age, Total_Per_Income))
+
+#Table where I changed Edu_Attainment's 25 catagories into 5 catagories: "no diploma", "high school diploma or equivalent", "some college, no degree", "associate/bachelor degree", and "higher than bachelor degree".
+Cat_Ed_Attain <- Sub_Per_Earn %>% subset(Total_Per_Earn > 0 & Edu_Attainment > 0)
+
+Cat_Ed_Attain$Edu_Attainment <-  replace(Cat_Ed_Attain$Edu_Attainment, Cat_Ed_Attain$Edu_Attainment < 16, "a. no diploma")
+
+Cat_Ed_Attain$Edu_Attainment <- replace( Cat_Ed_Attain$Edu_Attainment, Cat_Ed_Attain$Edu_Attainment < 18 & Cat_Ed_Attain$Edu_Attainment > 15, "b. HS diploma or equivalent")
+
+Cat_Ed_Attain$Edu_Attainment <- replace( Cat_Ed_Attain$Edu_Attainment, Cat_Ed_Attain$Edu_Attainment < 20 & Cat_Ed_Attain$Edu_Attainment > 17, "c. some college, no degree")
+
+Cat_Ed_Attain$Edu_Attainment <- replace( Cat_Ed_Attain$Edu_Attainment, Cat_Ed_Attain$Edu_Attainment < 22 & Cat_Ed_Attain$Edu_Attainment > 19, "d. associate/bachelor degree")                                                     
+Cat_Ed_Attain$Edu_Attainment <- replace( Cat_Ed_Attain$Edu_Attainment, Cat_Ed_Attain$Edu_Attainment < 26 & Cat_Ed_Attain$Edu_Attainment > 21, "e. higher than bachelor degree")
+
+#Table where I changed Edu_Attainment's 25 catagories into 2 catagories: "high school diploma or below" and "associate degree or above".
+Cat_Ed_2level <- Sub_Per_Earn %>% subset(Total_Per_Earn != "NA" & Edu_Attainment > 0)
+
+Cat_Ed_2level$Edu_Attainment <- ifelse(Cat_Ed_2level$Edu_Attainment<="19", "high school diploma or below", "associate degree or above")
+
+
+#Table where "SEX" and "Citizen_Stat" variables were changes from numerical to categorical with two levels.
+Cat_Sex_Citiz <- subset(Sub_Per_Earn, SEX != "NA" & Citizen_Stat != "NA" & Total_Per_Earn > 0)
+
+Cat_Sex_Citiz$SEX <- ifelse(Cat_Sex_Citiz$SEX=="2", "female", "male")
+Cat_Sex_Citiz$Citizen_Stat <- ifelse(Cat_Sex_Citiz$Citizen_Stat=="5", "not U.S. citizen", "U.S. citizen")
+
+
+#Table where "Total_Per_Earn", "SEX" and "Citizen_Stat" variables were changes from numerical to categorical.
+Ed_Sex_Citiz <- subset(Cat_Ed_Attain, SEX != "NA" & Citizen_Stat != "NA" & Total_Per_Earn > 0)
+Ed_Sex_Citiz$SEX <- ifelse(Ed_Sex_Citiz$SEX=="2", "female", "male")
+Ed_Sex_Citiz$Citizen_Stat <- ifelse(Ed_Sex_Citiz$Citizen_Stat=="5", "non-U.S. citizen", "U.S. citizen")
+```
+
+
+I main focus will be on the two variables `Total_Per_Earn` and `Edu_Attainment`. I will be looking at if there is a relationship between "total personal earnings" and "education attainment". Then I will see if the relationship between "total personal earnings" and "education attainment" changes if an individual is a male or a female living in New York. Lastly I will look to see if there is a relationship between "total personal earnings" and "education attainment" if an individual is a U.S. citizen vs. non-U.S. citizen. Therefore I will be performing three hypothesis tests to the data. The response variable in this project will be "Total Personal Earnings", which is a numerical variable. The explanatory variables in this project are "Educational Attainment", "Citizenship Status" and "SEX" the variables are categorical, but also can be numerical.
+
+The reason I wish to look at the four variables mention above is to get an understanding of the relationship between "education attainment" and "total personal earning". If there is a relationship between the two variables then we can say that there is chance of it being true for all people leaving in New York. Also, I want to see that if a person is a female or a male, with the same "education attainment" will their "total personal earning" change. Also will it change if the person is a U.S. citizen vs non-U.S. Citizen, with the same "education attainment" will their "total personal earning". By the end of this project we will be able have an understanding about all people leaving in New York, that whether their gender or citizenship status affect the relationship between their "total personal earning" and "education attainment". There might be other factors that can contribute to any links between these variables (like type of work, hours of work...). However for this project we will exclude those factors and only focus on the four variables. 
+
+
+### Exploratory data analysis:
+
+
+Let's look at the summary statistics of `Citizen_Stat`, `Edu_Attainment` and `SEX`, where `Total_Per_Earn` is greater then or equal to 500:
+
+```{r summary statistics 1, echo=FALSE, warning=FALSE, message=FALSE}
+Sum_Sub_Earn <- round(describe(Sub_Per_Earn), digits = 2)
+
+kable(Sum_Sub_Earn, align = "c", caption = "Table 2: Summary statistics for the four variables.")
+```
+
+
+Next let's study each of the variables using visualization. I created five graphs below, `graph 1` and `graph 2` are histograms about total personal earning. `graph 1` is total personal earning to the nearest dollars, the distribution looks to be extremely skewed to the left and `graph 2` is the log of total personal earning which is a little right skewed. `Graph 3` and `graph 4` shows the distribution of education attainment, first one as numerical and the second one as categorical with 5 levels. We see in `Graph3` that most respondents in this survey have as least a high school diploma or above (number 16 or above). `Graph 4` shows us that out of the 5 levels, there are many of the respondents have an associate or bachelor degree, and least number of respondents have no diploma. `Graph 5` shows the distribution of gender in the dataset. There seems to be about the same number of male respondents as female respondents. `Graph 6` shows the distribution of citizenship status, as two levels, U.S. Citizen and not U.S. Citizen. We see that most of the respondents are U.S. citizen and only a few are non-U.S. citizen. 
+
+
+```{r graphs of single variable, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(data = Sub_Per_Earn, aes(x = Total_Per_Earn)) +  geom_histogram(bins = 100, colour="black", fill="white") + ggtitle("Graph 1: Total personal earning in dollars.") + theme_solarized(light = FALSE)
+
+ggplot(data = Sub_Per_Earn, aes(x = log10(Total_Per_Earn))) +  geom_histogram(bins = 50, colour="black", fill="white") + ggtitle("Graph 2: Log of total personal earnings.") + theme_solarized(light = FALSE)
+
+ggplot(data = Sub_Per_Earn, aes(x = Edu_Attainment)) +  geom_bar( colour="gray", fill="black") + ggtitle("Graph 3: Distribution of educational attainment") + theme_igray() + theme_igray()
+
+ggplot(Cat_Ed_Attain, aes(x=Edu_Attainment)) + geom_bar(colour="gray", fill="black") + ggtitle("Graph 4: Distribution of educational attainment, by five levels") + theme_igray() + theme(axis.text.x  = element_text(angle=10,  hjust=0.9, vjust=1.1))
+
+ggplot(Cat_Sex_Citiz, aes(x=SEX)) + geom_bar() + ggtitle("Graph 5: Distribution of Gender") + theme_hc()
+
+ggplot(Cat_Sex_Citiz, aes(x=Citizen_Stat)) + geom_bar() + ggtitle("Graph 6: Distribution of citizenship status") + theme_solarized() 
+```
+
+
+Now that we have looked at the distribution for each of the variables, we will visualize the relationship between the variables. `Graph 7` shows the relationship between educational attainment and total personal earning. We see that the best line to describe the relationship between these two variables seems to be exponential. `Graph 8` portrays the distribution of log of total personal earnings by two levels: "high school diploma or below" and "associate degree or above".   
+
+`Graph 9a` and `graph 9b` portrays the distribution of log of total personal earnings by five levels. Looking at the histogram and the box plots, we see that as the educational attainment goes from "no diploma" to "more than bachelor degree", the center and the spread of `log(Total_Per_Earn)` moves from below 10 to above 10. If we look at `table 3` below we see that the mean total personal earnings is different for the five categories of education attainment. We see that the mean increases as the education attainment goes from "no diploma" to "more than bachelor degree" as it is shown by the visualization.
+
+
+```{r relationship b/w Education and Earning, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(Sub_Per_Earn, aes(x=Edu_Attainment, y=Total_Per_Earn)) + geom_point(colour="white") + ggtitle("Graph 7: Educational attainment vs total personal earning") + geom_smooth(se=FALSE, colour="red") + theme_hc(bgcolor = "darkunica") + scale_colour_hc("darkunica")
+
+ggplot(data = Cat_Ed_2level, aes(x = log10(Total_Per_Earn), fill= Edu_Attainment )) +  geom_histogram()  + facet_grid(Edu_Attainment~., scales = "free") + ggtitle("Graph 8: Distribution of educational attainment vs log \nof total personal earning by two levels") + theme(legend.justification=c(0,0), legend.position=c(0,0.2))
+
+ggplot(data = Cat_Ed_Attain, aes(x = log10(Total_Per_Earn), fill= Edu_Attainment )) +  geom_histogram()  + facet_grid(Edu_Attainment~., scales = "free") + ggtitle("Graph 9a: Distribution of educational attainment vs log \nof total personal earning by five levels") + scale_fill_brewer(palette = "Dark2") 
+
+ggplot(Cat_Ed_Attain, aes(x=Edu_Attainment, y=log10(Total_Per_Earn), fill= Edu_Attainment)) + geom_boxplot() + ggtitle("Graph 9b: Distribution of educational attainment vs log \nof total personal earning by five levels") + theme(axis.text.x  = element_text(angle=10,  hjust=0.9, vjust=1.1)) + scale_fill_brewer(palette = "Dark2")
+```
+```{r relationship b/w Education and Earning2, echo=FALSE, warning=FALSE, message=FALSE}
+des_ed_earn <- describeBy(Cat_Ed_Attain$Total_Per_Earn, Cat_Ed_Attain$Edu_Attainment, mat=TRUE, digits=2) %>% select(-c(item, trimmed, mad, range,skew,	kurtosis))
+rownames(des_ed_earn) <- NULL
+kable(des_ed_earn, caption = "Table 3: Summary statistics for the relationship between education attainment by levels and total earning")
+```
+
+ 
+`Graph 10` and `graph 11` portrays the data distribution of the relationship between educational attainment and log of total personal earning, by gender and citizenship status respectively. These two graphs shows that that the center of the data for the different gender and citizenship status, are different for each of the 5 levels. `Graph 12` is a graph that shows the relationship between the four variables: `log(Total_Per_Earn)`, `Edu_Attainment`, `SEX`, and `Citizen_Stat`. We see in this graphs that as the levels of educational attainment goes from "no diploma" to "more than bachelor degree", the center and spread of `log(Total_Per_Earn)` goes higher no matter the gender or the citizenship status.
+
+`Table 4` shows the relationship between earnings and education attainment, by gender and citizenship status. If we look at the summary statistics for the relationship between the variables below we see that they change as the education attainment goes from "no diploma" to "more than bachelor degree". For example if we look at the first 5 rows of the table which holds the information about the respondents who were non-U.S. citizen female, we see that the means of the total earning increases from 16 thousand dollars to 64 thousand dollars as there is higher the educational attainment. I think this shows there is a high probability that there is a relationship between educational attainment and total personal earning, even if a person is a female and/or a non-U.S. citizen.
+
+```{r relationship b/w Edu. & Earn. by sex & citizen, echo=FALSE, warning=FALSE, message=FALSE}
+
+ggplot(data = Ed_Sex_Citiz, aes(y = log10(Total_Per_Earn), x = SEX, fill= SEX)) + geom_boxplot() + facet_grid(.~ Edu_Attainment , scales = "free") + ggtitle("Graph 10: Distribution of educational attainment \nvs log of earning by gender") + scale_fill_brewer(palette = "Set1") 
+
+ggplot(data = Ed_Sex_Citiz, aes(y = log10(Total_Per_Earn), x= Citizen_Stat, fill= Citizen_Stat)) + geom_boxplot() + facet_grid(.~ Edu_Attainment, scales = "free") + ggtitle("Graph 11: Distribution of educational attainment \nvs log of earning by citizenship status") + theme_solarized() + theme(axis.text.x  = element_text(angle=10,  hjust=0.9, vjust=1.1)) + scale_fill_brewer(palette = "Accent")
+
+ggplot(Ed_Sex_Citiz, aes(x=Edu_Attainment, y=log10(Total_Per_Earn), fill=Edu_Attainment)) + geom_boxplot() + facet_grid(SEX ~ Citizen_Stat) + ggtitle("Graph 12: Distribution of Educational attainment vs log of \ntotal personal earning by gender and citizenship status") + scale_x_discrete(labels=c("a", "b", "c", "d", "e")) 
+```
+```{r relationship b/w Edu. & Earn. by sex & citizen2, echo=FALSE, warning=FALSE, message=FALSE}
+des_ed_sex_ci <- describeBy(Ed_Sex_Citiz$Total_Per_Earn, list(Ed_Sex_Citiz$Edu_Attainment, Ed_Sex_Citiz$Citizen_Stat, Ed_Sex_Citiz$SEX), mat=TRUE, digits=2) %>% select(-c(item, trimmed, mad, range,skew,	kurtosis))
+rownames(des_ed_sex_ci) <- NULL
+kable(des_ed_sex_ci, caption = "Table 4: Summary statistics for the relationship between education attainment, total earnings, sex, and citizenship status.")
+```
+
+
+
+### Inference:
+
+
+In this section we will look at the interaction between the variables `Total_Per_Earn`, `Edu_Attainment`, `SEX`, and `Citizen_Stat`. We will see if there is a relationship between educational attainment and total personal earning for people leaving in New York State. Then we will see if the gender plays a role in creating a relationship between educational attainment and total personal earning. Lastly, we will look at citizenship statues as factor which might or might not create a link between educational attainment and total personal earning. Statistical inference is the theory, methods, and practice of understanding the quality of parameter estimates or estimating the population mean. Here we will be using various methods to perform statistical inference, like hypothesis test, p-value test, ANOVA test, confidence interval and regression model.
+
+
+```{r lm, echo=FALSE, warning=FALSE, message=FALSE}
+lm_earn_ed <- lm(Total_Per_Earn ~ Edu_Attainment, data =
+             Sub_Per_Earn)
+lm_log_earn <- lm(log10(Total_Per_Earn) ~ Edu_Attainment, data =
+             Sub_Per_Earn)
+lm_cat_ed <- lm(log10(Total_Per_Earn) ~ Edu_Attainment, data =
+             Cat_Ed_Attain)
+lm_earn_ed_sex <- lm(log10(Total_Per_Earn) ~ Edu_Attainment + SEX, data =
+             Cat_Sex_Citiz)
+lm_earn_ed_citi <- lm(log10(Total_Per_Earn) ~ Edu_Attainment + Citizen_Stat, 
+                      data = Cat_Sex_Citiz)
+lm_cat_ed_sex <- lm(log10(Total_Per_Earn) ~ Edu_Attainment + SEX, data =
+             Ed_Sex_Citiz)
+lm_cat_ed_citi <- lm(log10(Total_Per_Earn) ~ Edu_Attainment + Citizen_Stat,
+                     data = Ed_Sex_Citiz)
+lm_ed_sex_citi <- lm(log10(Total_Per_Earn) ~ Edu_Attainment + SEX +
+                       Citizen_Stat, data = Ed_Sex_Citiz)
+```
+
+Primarily we will look at `Total_Per_Earn` and `Edu_Attainment` by conduct the first hypothesis test, where `Edu_Attainment` is categorical by two levels. Before we do any analysis let's check if the conditions necessary for inference are satisfied. I will create a check list to the conditions are meet:
+
+1. Independence within groups: __Meet__     
+    - Random sample/assignment: __It is a random sample of voluntary personal who taken the survey either by internet, phone or paper.__       
+    - If sampling without replacement, $n < 10\%$ of population: __Has about $ 1\%$ of the United States population.__      
+2. Independence between groups:__Meet__   
+    - __Respondents could either have educational attainment as HS diploma or less or Associate degree or higher, but not both__       
+3. Sample size / skew: __Meet__    
+    - $n\ge{30}$: __If we look at `table 4` we see that n for both variables and their levels are more $n\ge{30}$.__      
+    - Population distribution should not be extremely skewed: __It is not extremely skewed, as we see above in `graph 8`.__    
+    
+
+Since conditions necessary for inference are satisfied, I will perform hypothesis test. During hypothesis test I will start with two hypothesis the null hypothesis (H0), and the alternative hypothesis (HA). I will not reject the null hypothesis, unless the evidence in favor of the alternative hypothesis is very strong, because if I do not do that there is a high probability that I would perform Type 1 Error. Type 1 Error is when someone rejects the null hypothesis when it is true.[$^3$](#c) Here is the first hypothesis test: 
+
+__$H_0$: There is no difference between the average total personal earnings respondents, who have an educational attainment of HS diploma or lower and associate degree or higher.__
+
+$$\mu_{diff}=0$$   
+
+__$H_A$: There is a difference between the average total personal earnings respondents, who have an educational attainment of HS diploma or lower and associate degree or higher.__
+
+$$\mu_{diff}\ne0$$ 
+
+Here is result of hypothesis test and confidence interval: 
+
+```{r inference 1, warning=FALSE, message=FALSE}
+inference(y=Cat_Ed_2level$Total_Per_Earn, x= Cat_Ed_2level$Edu_Attainment, est = "mean", type = "ht", null = 0, alternative = "twosided", method = "theoretical")
+
+inference(y=Cat_Ed_2level$Total_Per_Earn, x= Cat_Ed_2level$Edu_Attainment, est = "mean", type = "ci", null = 0, alternative = "twosided", method = "theoretical")
+
+```
+
+Looking at the results above we see that on the hypothesis test the $p-value$ is $0$ which is less than $0.05$, meaning that we can reject the null hypothesis. On the confidence interval test we see that the we are 95% confident that that the difference between average total personal earnings of respondents who have a education attainment of associate degree or higher vs respondents who have an education attainment of HS diploma or lower is between $\$38594.5$ and $\$40332.5$. A confidence interval is the most likely range of values for the population parameter in my case is people living in New York State.
+
+
+By looking at `graph 2` and `graph 7` I noticed that it is better transform the total personal earnings in the format of log$_{10}$, then keeping them to the nearest dollars, therefore from here on I will log total personal earning. Next I will conduct a hypothesis test using ANOVA, where `Edu_Attainment` is categorical, by five levels. Analysis of Variance (ANOVA) model, is a model which uses F test statistic, which is the ratio of the between group and within group variability. The ANOVA uses a single hypothesis test to check whether the means across many groups are equal.[$^3$](#c) The conditions necessary for ANOVA test are satisfied as we see below:
+
+ 
+1. Independence within and between groups: __Meet__     
+    - Random sample/assignment: __It is a random sample of voluntary personal who taken the survey either by internet, phone or paper. Since the sample is random, the respondents' educational attainment should be independent of other respondents'.__            
+    - If sampling without replacement, $n < 10\%$ of population: __Has about $ 1\%$ of the United States population.__      
+2. Approximately normal: __Meet__    
+    - $n\ge{30}$: __If we look at `table 4` we see that n for both variables and their levels are more $n\ge{30}$.__      
+    - Population distribution should not be extremely skewed: __It is not extremely skewed, as we see above in `graph 9a`.__      
+3. Constant variance: __Meet__    
+   - __Looking at the `graph 9b`, we see that the variability of the five levels is roughly constant.__    
+   
+
+Since conditions necessary for ANOVA are satisfied, I will perform hypothesis test: 
+
+__$H_0$: There is no difference between the average total personal earnings respondents, between the 5 educational attainment levels.__
+
+$$\mu_{a}=\mu_{b}=\mu_{c}=\mu_{d}=\mu_{e}$$   
+
+__$H_A$: At least one of the average total personal earnings respondents, between the 5 educational attainment levels is different.__
+ 
+```{r anova 1, echo=FALSE, warning=FALSE, message=FALSE}
+kable(anova(lm_cat_ed))
+```
+
+Looking at the ANOVA test above we see that F-Value is large $>4000$. Since the F-value is so big the p-value is 0, which means we can reject the null hypothesis. The p-value is "the probability of observing data at least as favorable to the alternative hypothesis as our current data set, if the null hypothesis is true."[$^3$](#c) This test shows us that at least one of the mean of the total personal earning is different.
+
+
+Next we will find the linear regression, the best fit line to best represent the relationship between educational attainment (in numerical form from 1 to 25) and log$_{10}$ of total personal earnings. For the linear regression we use the least squares line to best represent the data, since it is easier to do, it is commonly used and in many cases it shows a residual twice as large as another which is usually more than twice as bad. The strength of the fit of a linear model is most commonly evaluated using $R^2$, which tells us what percent of variability in the response variable is explained by the model. Lets check the condition for the least squares line:
+
+1. Linearity: Looking at the residual plot below we see that the points are mostly scattered around $y=0$, with a pattern. This means that the relationship between 'Edu_Attainment` and 'Total_Per_Earn' **is not linear**.
+
+2. Nearly normal residuals: Looking at the histogram and the normal probability plot below we see that __residuals are nearly normal__.
+
+3. Constant variability: Looking at the plots below and the below, I can say that the variability of points around the least squares line is __ not constant__.
+
+Since the condition test fail for linear regression, the least squares line, I will not analysis the graph or the correlation of the line. This shows that the relationship between educational attainment (in numerical form from 1 to 25) and log$_{10}$ of total personal earnings is not linear. I also tried original data without any transformation but that does not work either.
+
+```{r regression condition, echo=FALSE, warning=FALSE, message=FALSE}
+ggplot(Cat_Sex_Citiz, aes(x=Edu_Attainment, y=log10(Total_Per_Earn))) + geom_point() + ggtitle("Graph 13: Educational attainment vs total personal earning by gender") + geom_smooth(method = lm, se=FALSE) + theme_igray()
+
+plot(lm_log_earn$residuals ~ log10(Sub_Per_Earn$Total_Per_Earn))
+abline(h = 0, lty = 3)
+
+hist(lm_log_earn$residuals)
+
+qqnorm(lm_log_earn$residuals)
+qqline(lm_log_earn$residuals)
+```
+```{r cor}
+cor(Sub_Per_Earn$Edu_Attainment, log10(Sub_Per_Earn$Total_Per_Earn))
+```
+
+
+Next I will perform ANOVA test to see if there is a relationship between education attainment and total personal earnings, if we put gender as a second explanatory variable. Let's check the conditions necessary for ANOVA test below:
+
+ 
+1. Independence within and between groups: __Meet__     
+    - Random sample/assignment: __It is a random sample. Since the sample is random, the respondents' educational attainment and gender should be independent of other respondents'.__       
+    - If sampling without replacement, $n < 10\%$ of population: __Has about $ 1\%$ of the United States population.__      
+2. Approximately normal: __Meet__    
+    - $n\ge{30}$: __If we look at `table 4` we see that n for both variables and their levels are more $n\ge{30}$.__      
+    - Population distribution should not be extremely skewed: __It is not extremely skewed, as we see on the Q-Q plot below.__      
+3. Constant variance: __Meet__    
+   - __Looking at the `graph 9`, we see that the variability of both genders are roughly constant across five levels.__    
+   
+
+```{r Q-Q plot 1,  echo=FALSE, warning=FALSE, message=FALSE}
+qqnorm(lm_cat_ed_sex$residuals)
+qqline(lm_cat_ed_sex$residuals)
+```
+
+Since conditions necessary for ANOVA are satisfied, I will perform hypothesis test: 
+
+__$H_0$: There is no difference between the average total personal earnings respondents, between the 5 educational attainment levels, by gender.__
+
+__$H_A$: At least one of the average total personal earnings respondents is different.__
+ 
+
+```{r anova 2, echo=FALSE, warning=FALSE, message=FALSE}
+kable(anova(lm_cat_ed_sex))
+
+ggplot(Cat_Sex_Citiz, aes(x=Edu_Attainment, y=log10(Total_Per_Earn), color=SEX)) + geom_point() + ggtitle("Graph 15: Educational attainment vs total personal earning by gender") + geom_smooth(method = lm, se=FALSE) + theme_hc(bgcolor = "darkunica") + scale_colour_hc("darkunica")
+```
+
+Looking at the ANOVA test above we see that F-Value is large $>4000$ for `Edu_Attainment` and large $>3000$ for `SEX`. Since the F-value is so big the p-value is 0, which means I can reject my null hypothesis. 
+
+
+Next I will perform another ANOVA test to see if there is a relationship between education attainment and total personal earnings, if we put citizenship status as a secondary explanatory variable. Let's check the conditions necessary for ANOVA test below:
+
+ 
+1. Independence within and between groups: __Meet__     
+    - Random sample/assignment: __It is a random sample. The respondents educational attainment and citizen status should be independent of other respondents'.__       
+    - If sampling without replacement, $n < 10\%$ of population: __Has about $ 1\%$ of the United States population.__      
+2. Approximately normal: __Meet__    
+    - $n\ge{30}$: __If we look at `table 4` we see that n for both variables and their levels are more $n\ge{30}$.__      
+    - Population distribution should not be extremely skewed: __It is not extremely skewed, as we see on the Q-Q plot below.__      
+3. Constant variance: __Meet__    
+   - __Looking at the `graph 10`, we see that the variability of the variables are roughly constant.__    
+   
+
+```{r Q-Q plot 2,  echo=FALSE, warning=FALSE, message=FALSE}
+qqnorm(lm_cat_ed_sex$residuals)
+qqline(lm_cat_ed_sex$residuals)
+```
+
+Since conditions necessary for ANOVA are satisfied, I will perform hypothesis test: 
+
+__$H_0$: There is no difference between the average total personal earnings respondents, between the 5 educational attainment levels, by citizenship status.__
+
+__$H_A$: At least one of the average total personal earnings respondents is different.__    
+
+
+```{r anova 3, echo=FALSE, warning=FALSE, message=FALSE}
+
+kable(anova(lm_cat_ed_citi))
+
+ggplot(Cat_Sex_Citiz, aes(x=Edu_Attainment, y=log10(Total_Per_Earn), color=Citizen_Stat)) + geom_point() + ggtitle("Graph 15: Educational attainment vs total personal earning by citizen Status") + geom_smooth(method = lm, se=FALSE) + theme_hc(bgcolor = "darkunica") + scale_colour_hc("darkunica")
+```
+
+Looking at the ANOVA test above we see that F-Value is large $>4000$ for `Edu_Attainment` and large $>6$ for `Citizen_Stat`. Since the F-value is so big for `Edu_Attainment` the p-value is 0, and for `Citizen_Stat` the p-value is $0.014$ which is less $<0.05$ then I can reject my null hypothesis. 
+
+
+
+### Conclusion: 
+
+
+After completing various statistical analysis on the data, I come to the conclusion that in New York State there is a difference between an individual's total earnings and the highest degree of education an individual has completed. This project also showed that if the individual is female or male also affects the difference between their earning and educational attainment. Lastly this project showed that citizenship status plays a role in the difference between their earning and educational attainment. However, I would like to look at data for the surveys for other years and states to see if my conclusion holds true all individual, no matter the time period or the state.[$^5$](#e)
+
+
+During this project I learned a lot about my data. I found out that there were a lot of respondents who have 0 to negative earnings. I learned that negative earnings means loss of money, also that some people earn as small as <10 dollars. I also learned was surprised to know that there were some respondents who had little to no education. I learned there were many respondents who went to high school however did not get their high school degree. I learned that in New York State about equal number both gender seem to have an earning greater than 499 dollars. One of the most surprising thing about the data was that the range for respondents' age was from $0$ to $94$. I really would like to know more about this data and how they were obtained (was it simple random sample, cluster sample or others).
+
+There is room for a lot of future research, with this data. I only analyzes a little bit of it. In the future we can look at if education have a role in income. We can look at is there a relationship between age and earnings/income. Does income and earnings have a liner relationship? There is so much more we can do to study this data set. The possibilities are endless especially with the original 2009 survey data.[$^4$](#d)
+
+
+
+### References:
+
+
+1. <a name="a"/> 2009 American Community Survey 1-Year PUMS Housing File. (2015, May 20). Retrieved March 1, 2016, from  <https://catalog.data.gov/dataset/2009-american-community-survey-1-year-pums-housing-file>.   
+ 
+2. <a name="b"/> 2010 Census Interactive Population Map. (n.d.). Retrieved May 1, 2016, from  <https://www.census.gov/2010census/popmap/>.
+
+3. <a name="c"/> Diez, D. M., Barr, C. D., & Cetinkaya-Rundel, M. (2012). OpenIntro statistics. Lexington, KY: CreateSpace.
+Can be downloaded from <https://www.openintro.org/stat/textbook.php?stat_book=os>
+
+4. <a name="d"/> Hossain, N. (March 2016). GitHub. from <https://github.com/nabilahossain/Class-DATA606/tree/master/Project>
+
+5. <a name="e"/> PUMS Data 2000 - current. (2016, January 15). Retrieved May 21, 2016, from <http://www.census.gov/programs-surveys/acs/data/pums.html>
+It is the link: "2009 ACS 1-year PUMS".
+
+6. <a name="f"/> PUMS Technical Documentation. (2015, October 14). Retrieved March 1, 2016, from <https://www.census.gov/programs-surveys/acs/technical-documentation/pums/documentation.2009.html>
+The two links/pdf that I used are: "2009 Data Dictionary" and "2009 PUMS Accuracy"
+
+7. <a name="g"/> Ross, S. (2015). What is the difference between earnings and income? | Investopedia. Retrieved May 1, 2016, from <http://www.investopedia.com/ask/answers/070615/what-difference-between-earnings-and-income.asp>
+
